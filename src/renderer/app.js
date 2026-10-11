@@ -90,6 +90,8 @@ async function refresh() {
   if (!state.initSel) { st.changes.forEach((c) => state.selected.add(c.path)); state.initSel = true; }
   $('branchName').textContent = br.current;
   renderScenario(br);
+  $('scenarioLabel').textContent = br.current === 'main' ? 'Main model' : br.current.replace(/-/g, ' ');
+  $('scenarioBtn').classList.toggle('onscen', br.current !== 'main');
   renderSync().catch(() => {});
   $('changeCount').textContent = st.changes.length;
   renderList();
@@ -107,7 +109,7 @@ function renderScenario(br) {
   const main = br.list.some((x) => x.name === 'main') ? 'main' : null;
   if (!main || br.current === main) { b.hidden = true; return; }
   const name = br.current.replace(/-/g, ' ');
-  b.replaceChildren(h('span', { class: 'dot' }), h('span', { class: 'grow' }, 'You’re working on the scenario ', h('b', {}, name), '. The main model is unchanged until you bring it in.'),
+  b.replaceChildren(h('span', { class: 'dot' }), h('span', { class: 'grow' }, 'You’re working on the scenario ', h('b', {}, name), '. Your team can see it, but the main model is unchanged until you bring it in.'),
     h('button', { class: 'secondary', onclick: guard(() => switchTo(main)) }, 'Back to main model'),
     h('button', { class: 'primary', onclick: guard(() => bringIn(br.current, main)) }, 'Bring into main model'));
   b.hidden = false;
@@ -119,6 +121,30 @@ async function bringIn(scenario, main) {
   await refresh();
   await startMerge(scenario);
 }
+// Main model, my what-ifs, and the ones teammates shared - one list.
+$('scenarioBtn').addEventListener('click', guard(async () => {
+  if (!hasRepo()) return toast('Open a project first', true);
+  const { current, list } = await call('scenarios');
+  const nice = (n) => n.replace(/-/g, ' ');
+  const meta = (s) => `${s.author || ''} · ${ago(s.time)}${s.local && s.shared ? ' · shared' : s.local ? ' · only on this computer' : ''}`;
+  const row = (s) => h('button', { class: 'item sitem' + (s.name === current ? ' current' : ''), onclick: () => { closeMenu(); if (s.name !== current) switchTo(s.name).then(() => !s.local && toast(`Opened ${s.author}’s scenario “${nice(s.name)}”`)); } },
+    h('span', { class: 'sname' }, s.name === 'main' ? 'Main model' : nice(s.name)), h('span', { class: 'smeta' }, s.subject ? `“${s.subject}” · ${meta(s)}` : meta(s)));
+  const main = list.find((s) => s.name === 'main');
+  const mine = list.filter((s) => s.name !== 'main' && s.local);
+  const team = list.filter((s) => s.name !== 'main' && !s.local);
+  openMenu($('scenarioBtn'), [
+    main && row(main),
+    h('div', { class: 'mhead' }, 'My what-ifs'),
+    ...(mine.length ? mine.map(row) : [h('div', { class: 'empty-note' }, 'None yet')]),
+    h('div', { class: 'mhead' }, 'Team what-ifs'),
+    ...(team.length ? team.map(row) : [h('div', { class: 'empty-note' }, state.sync && state.sync.hosted ? 'No one else has shared a scenario yet' : 'Share the project to see your team’s scenarios')]),
+    h('hr'),
+    item('＋ New what-if…', newBranchDialog),
+  ].filter(Boolean));
+  // pick up scenarios teammates shared since the last check
+  if (state.sync && state.sync.hosted && Date.now() - (state.checked || 0) > 15000) { state.checked = 0; renderSync().catch(() => {}); }
+}));
+
 $('whatIfBtn').addEventListener('click', () => (hasRepo() ? newBranchDialog() : toast('Open a project first', true)));
 $('moreBtn').addEventListener('click', () => {
   const scen = (state.branches && state.branches.list.filter((b) => b.name !== 'main')) || [];
@@ -157,6 +183,7 @@ async function renderSync() {
   try {
     state.sync = await call('sync:state');
   } catch { btn.disabled = true; return; }
+  updateCommitBox(); // its label depends on whether the project is shared
   const s = state.sync;
   btn.className = 'tb';
   if (!s.remotes.length) { sub.textContent = 'Team'; label.textContent = 'Not shared yet · Share with team'; btn.classList.add('todo'); btn.title = 'Share this project with your team'; return; }
@@ -165,7 +192,7 @@ async function renderSync() {
     state.checked = Date.now();
     call('sync:fetch', s.remotes[0].name).then(() => renderSync()).catch(() => {});
   }
-  if (!s.upstream) { sub.textContent = 'Team'; label.textContent = s.branch === 'main' ? 'Not shared yet · Share now' : 'Private scenario'; btn.classList.add(s.branch === 'main' ? 'todo' : 'busy'); btn.title = 'Click to share'; return; }
+  if (!s.upstream) { sub.textContent = 'Team'; label.textContent = s.branch === 'main' ? 'Not shared yet · Share now' : 'Scenario not shared yet · Share'; btn.classList.add(s.branch === 'main' ? 'todo' : 'busy'); btn.title = 'Click to share'; return; }
   // Teammates saved something and you have nothing unsaved: bring it in without asking.
   if (s.behind && !state.changes.length && !state.pulling) {
     state.pulling = true;
@@ -299,7 +326,7 @@ function updateCommitBox() {
   $('selectAll').indeterminate = n > 0 && n < total;
   const b = state.branches ? state.branches.current : 'main';
   $('commitBtn').innerHTML = '';
-  $('commitBtn').append(b !== 'main' ? 'Save to scenario' : state.sync && state.sync.hosted ? 'Save & share with team' : 'Save version');
+  $('commitBtn').append(b !== 'main' ? (state.sync && state.sync.hosted ? 'Save & share scenario' : 'Save to scenario') : state.sync && state.sync.hosted ? 'Save & share with team' : 'Save version');
   $('commitBtn').disabled = !n || !$('summary').value.trim();
   $('suggestBtn').disabled = !n;
   $('avatar').textContent = (state.author || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -457,7 +484,7 @@ function renderOther(c) {
 // Scenarios (anything but main) stay private until they are brought into the main model.
 async function shareNow(quiet) {
   const s = await call('sync:state');
-  if (!s.hosted || (quiet && s.branch !== 'main')) return false;
+  if (!s.hosted) return false;
   const btn = $('syncBtn'); btn.className = 'tb busy'; btn.querySelector('.tb-value').textContent = 'Sharing…';
   try {
     await call('sync:push', s.remotes[0].name, { setUpstream: true });

@@ -153,3 +153,36 @@ async function bundleOf(repo) {
   await repo.g.git('bundle', 'create', f, '--branches');
   return f;
 }
+
+test("a teammate's shared what-if shows up in your scenario list and can be opened", opts, async () => {
+  assert.ok(SRC);
+  const b44 = fakeBase44();
+  const anaDir = tmp();
+  fs.copyFileSync(SRC, path.join(anaDir, NAME));
+  const ana = await new Repo(anaDir).open();
+  await ana.commit({ message: 'Add the budget', paths: [NAME], author: 'Ana' });
+  await hosted.link(ana, b44, { name: 'Scenarios' });
+  await hosted.push(ana, b44, {});
+
+  const ben = await new Repo(tmp()).open();
+  await hosted.link(ben, b44, { repositoryId: b44.db.Repository[0].id });
+
+  // Ana starts a what-if, edits, and shares it (without touching main)
+  await ana.createAndSwitch('Downside-case');
+  const [cellA] = await cellsOf(fs.readFileSync(SRC), 1);
+  await setCell(path.join(anaDir, NAME), cellA, 1);
+  await ana.commit({ message: 'Stress revenue', paths: [NAME], author: 'Ana' });
+  await hosted.push(ana, b44, {});
+
+  await hosted.fetch(ben, b44);
+  const { list } = await ben.scenarios();
+  const theirs = list.find((s) => s.name === 'Downside-case');
+  assert.ok(theirs, 'listed');
+  assert.deepEqual([theirs.local, theirs.shared, theirs.author, theirs.subject], [false, true, 'Ana', 'Stress revenue']);
+
+  const r = await ben.switchBranch('Downside-case');
+  assert.equal(r.switched, true, 'opening it creates a local copy that tracks the shared one');
+  assert.equal(String(await cellValue(ben, 'HEAD', NAME, cellA)), '1');
+  assert.equal((await ben.syncState()).upstream, 'base44/Downside-case');
+  assert.notEqual(String(await cellValue(ben, 'main', NAME, cellA)), '1', 'main is untouched');
+});

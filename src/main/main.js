@@ -100,6 +100,7 @@ const api = {
   },
 
   async 'branches'() { return (await getRepo()).branches(); },
+  async 'scenarios'() { return (await getRepo()).scenarios(); },
   async 'branch:create'(name) { return (await getRepo()).createAndSwitch(name); },
   async 'branch:switch'(name, opts) { return (await getRepo()).switchBranch(name, opts); },
   async 'branch:rename'(a, b) { return (await getRepo()).renameBranch(a, b); },

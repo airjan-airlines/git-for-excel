@@ -248,6 +248,23 @@ class Repo {
     return { current, list: list.sort((a, b) => a.name.localeCompare(b.name)), deleted: [] };
   }
 
+  // Scenarios = your branches plus the ones teammates shared (base44/*), with who last changed each and when.
+  async scenarios() {
+    const current = await this.g.branch();
+    const r = await this.g.try('for-each-ref', '--format=%(refname)%09%(authorname)%09%(committerdate:unix)%09%(subject)', 'refs/heads', 'refs/remotes/base44');
+    const byName = new Map();
+    for (const line of r.ok && r.out ? r.out.split('\n').filter(Boolean) : []) {
+      const [ref, author, at, subject] = line.split('\t');
+      const name = ref.replace(/^refs\/(heads|remotes\/base44)\//, '');
+      if (name === 'HEAD') continue;
+      const e = byName.get(name) || { name, local: false, shared: false, time: 0 };
+      if (ref.startsWith('refs/heads/')) e.local = true; else e.shared = true;
+      if (+at * 1000 > e.time) Object.assign(e, { author, time: +at * 1000, subject });
+      byName.set(name, e);
+    }
+    return { current, list: [...byName.values()].sort((a, b) => b.time - a.time) };
+  }
+
   checkName(name) {
     if (!name || /[\s~^:?*[\\]/.test(name) || name.includes('..')) throw new Error('Branch names can’t contain spaces or special characters.');
   }

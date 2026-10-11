@@ -252,3 +252,13 @@ tr.risk td { background: var(--del-bg); }
 
 /* one view only: no sub-tab strip, no disabled Visual tab */
 .tabs.sub { display: none; }
+
+/* scenario switcher */
+.pill-btn.scen { display: inline-flex; align-items: center; gap: 8px; }
+.pill-btn.scen .sdot { width: 9px; height: 9px; border-radius: 50%; background: #3b5bdb; }
+.pill-btn.scen.onscen { border-color: #ddd6fe; background: #faf8ff; } .pill-btn.scen.onscen .sdot { background: var(--purple); }
+.popover .mhead { padding: 8px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.popover .sitem { display: flex; flex-direction: column; align-items: flex-start !important; gap: 1px !important; }
+.popover .sitem .sname { font-weight: 600; } .popover .sitem .smeta { font-size: 12px; color: var(--muted); }
+.popover .sitem.current .sname::before { content: "✓ "; }
+.popover .empty-note { padding: 4px 10px 8px; font-size: 12px; color: var(--muted); }
