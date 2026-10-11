@@ -1,0 +1,4 @@
+node_modules/
+demo-repo/
+base44/functions/*/lib/
+base44.local.json

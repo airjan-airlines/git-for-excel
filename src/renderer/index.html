@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GitXL</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <div id="titlebar">
+      <div class="brand"><span class="tile"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 3 7.5 12 12l9-4.5z"/><path d="m3 12 9 4.5 9-4.5"/><path d="m3 16.5 9 4.5 9-4.5"/></svg></span><span><span class="name">Git<em>XL</em></span><br><span class="tag-line">version control for Excel</span></span></div>
+      <nav id="menubar" aria-label="Menu" hidden></nav>
+      <div class="spacer"></div>
+      <span class="me" id="meAvatar" title="You">A</span>
+    </div>
+    <header id="toolbar" role="toolbar" aria-label="Project">
+      <span class="ptile" id="projTile">—</span>
+      <div class="ptext">
+        <button class="pname" id="repoBtn" aria-haspopup="true" title="Switch project"><span id="repoName">None</span><span class="caret">▾</span></button>
+        <div class="pmeta"><span class="privpill">🔒 private</span><span id="projMeta">Excel</span></div>
+      </div>
+      <button class="tb" id="branchBtn" hidden><span class="tb-value" id="branchName">—</span></button>
+      <button class="tb" id="syncBtn" aria-haspopup="true" title="Share this project with your team">
+        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5a5.5 5.5 0 0 1 5.07 3.37.75.75 0 1 1-1.38.58A4 4 0 0 0 4.3 7H5.5a.5.5 0 0 1 .35.85l-2 2a.5.5 0 0 1-.7 0l-2-2A.5.5 0 0 1 1.5 7h1.3A5.5 5.5 0 0 1 8 2.5m5.15 3.65a.5.5 0 0 1 .7 0l2 2a.5.5 0 0 1-.35.85h-1.3A5.5 5.5 0 0 1 4.93 10.13a.75.75 0 1 1 1.38-.58A4 4 0 0 0 11.7 9H10.5a.5.5 0 0 1-.35-.85z"/></svg>
+        <span class="tb-text"><span class="tb-label">Team</span><span class="tb-value">Share</span></span>
+      </button>
+      <div class="spacer"></div>
+      <button class="secondary pill-btn scen" id="scenarioBtn" aria-haspopup="true" title="Switch between the main model and what-if scenarios"><span class="sdot"></span><span id="scenarioLabel">Main model</span> ▾</button>
+      <button class="secondary pill-btn" id="whatIfBtn" title="Try a scenario without touching the main model">＋ Try a what-if</button>
+      <button class="secondary pill-btn more" id="moreBtn" aria-haspopup="true" title="More">⋯</button>
+    </header>
+    <div id="scenarioBanner" class="scenario" hidden></div>
+    <nav class="pagetabs" role="tablist">
+      <button role="tab" id="tabChanges" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Changes <span class="badge" id="changeCount">0</span></button>
+      <button role="tab" id="tabHistory" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></svg>History</button>
+    </nav>
+    <main id="main">
+      <aside id="side">
+        <section id="changesPane">
+          <div class="filterrow"><input id="fileFilterInput" type="text" placeholder="Filter" aria-label="Filter changed files"></div>
+          <label class="selectall"><input type="checkbox" id="selectAll"> <span id="selectAllLabel">0 changed files</span></label>
+          <ul id="fileList" class="list" role="listbox" aria-label="Changed files"></ul>
+          <div id="commitBox">
+            <div class="msgrow"><span class="avatar" id="avatar" aria-hidden="true">?</span><input id="summary" type="text" placeholder="What changed? (required)" maxlength="120" aria-label="Commit summary"></div>
+            <textarea id="description" placeholder="Why: context for reviewers (optional)" rows="3" aria-label="Commit description"></textarea>
+            <div id="suggestions" class="insights" hidden></div>
+            <div class="msgtools"><button class="link" id="suggestBtn" title="Write a summary of your edits for you">✨ Suggest message</button></div>
+            <button class="primary" id="commitBtn" disabled>Save version</button>
+          </div>
+        </section>
+        <section id="historyPane" hidden>
+          <div class="filterrow"><select id="fileFilter" aria-label="Filter history by file"><option value="">All files</option></select></div>
+          <ul id="commitList" class="list" role="listbox" aria-label="Commits"></ul>
+        </section>
+      </aside>
+      <section id="content">
+        <div id="empty" class="empty"></div>
+        <div id="detail" hidden>
+          <div class="detail-head">
+            <div class="detail-title" id="detailTitle"></div>
+            <div class="detail-actions" id="detailActions"></div>
+          </div>
+          <div id="commitMeta" hidden></div>
+          <div id="insights" class="insights" hidden></div>
+          <div class="tabs sub" role="tablist">
+            <button role="tab" id="tabSemantic" aria-selected="true">Cell changes</button>
+            <button role="tab" id="tabVisual" aria-selected="false" disabled title="Visual diff needs LibreOffice, which was not found">Visual</button>
+          </div>
+          <div id="bodyRow">
+            <ul id="historyFiles" class="list files" hidden aria-label="Files in this version"></ul>
+            <div id="diff" class="diff" tabindex="0"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="menu" class="popover" hidden></div>
+    <div id="modalRoot"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
