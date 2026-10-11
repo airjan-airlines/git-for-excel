@@ -1,0 +1,29 @@
+{
+  "name": "officegit",
+  "version": "0.1.0",
+  "description": "Version control for Excel, Word and PowerPoint",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/git-vc.test.js test/remote.test.js test/reader.test.js test/base44.test.js test/gitxl.test.js test/hosted.test.js test/formulas.test.js",
+    "demo": "node scripts/demo-setup.js",
+    "build:base44": "node scripts/build-base44.js",
+    "base44:inspect": "node scripts/base44-inspect.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/airjan-airlines/talk-to-users-group-8.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/airjan-airlines/talk-to-users-group-8/issues"
+  },
+  "homepage": "https://github.com/airjan-airlines/talk-to-users-group-8#readme",
+  "dependencies": {
+    "electron": "^44.7.0",
+    "fast-xml-parser": "^5.11.2",
+    "jszip": "^3.10.2"
+  }
+}
