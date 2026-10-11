@@ -1,4 +1,4 @@
-# OfficeGit
+# GitXL
 
 Version control for Excel files, with a GitHub Desktop-style UI.
 
